@@ -1,0 +1,61 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitives
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+    
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation Blueprints
+    function isValidWord(data) {
+      return data.word is string && data.word.size() > 0 && data.word.size() <= 500 &&
+             data.level is string && data.level in ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] &&
+             data.vietnameseMeaning is string && data.vietnameseMeaning.size() <= 2000;
+    }
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid &&
+             data.email == request.auth.token.email &&
+             (data.xp == null || data.xp is number);
+    }
+
+    function isValidProgress(data) {
+      return data.wordId is string && isValidId(data.wordId) &&
+             data.status in ['learning', 'known'];
+    }
+
+    // Collection Rules
+    
+    // Words collection: Allow authenticated users to browse and contribute
+    match /words/{wordId} {
+      allow read: if isSignedIn();
+      allow create: if isSignedIn() && isValidWord(request.resource.data);
+      allow update, delete: if false; 
+    }
+
+    // User profiles and nested progress
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      allow create, update: if isOwner(userId) && isValidUser(request.resource.data);
+      
+      match /progress/{wordId} {
+        allow read: if isOwner(userId);
+        allow create, update: if isOwner(userId) && isValidId(wordId) && isValidProgress(request.resource.data);
+        allow delete: if isOwner(userId);
+      }
+    }
+  }
+}

@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and global progress",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "currentLevel": { "type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"] },
+        "xp": { "type": "number" },
+        "lastActive": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Word": {
+      "title": "Word",
+      "description": "A vocabulary word entry",
+      "type": "object",
+      "properties": {
+        "word": { "type": "string" },
+        "level": { "type": "string", "enum": ["A1", "A2", "B1", "B2", "C1", "C2"] },
+        "vietnameseMeaning": { "type": "string" },
+        "ipa": { "type": "string" },
+        "wordFamily": { "type": "array", "items": { "type": "string" } },
+        "partOfSpeech": { "type": "string" },
+        "definitions": { "type": "string" }
+      },
+      "required": ["word", "level", "vietnameseMeaning"]
+    },
+    "UserWordProgress": {
+      "title": "UserWordProgress",
+      "description": "Individual word progress for a user (Spaced Repetition)",
+      "type": "object",
+      "properties": {
+        "wordId": { "type": "string" },
+        "status": { "type": "string", "enum": ["learning", "known"] },
+        "lastReviewed": { "type": "string", "format": "date-time" },
+        "nextReview": { "type": "string", "format": "date-time" },
+        "interval": { "type": "number" },
+        "easeFactor": { "type": "number" },
+        "attempts": { "type": "number" }
+      },
+      "required": ["wordId", "status"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profile data"
+    },
+    "/users/{userId}/progress/{wordId}": {
+      "schema": "UserWordProgress",
+      "description": "User's progress with a specific word"
+    },
+    "/words/{wordId}": {
+      "schema": "Word",
+      "description": "Global dictionary of words"
+    }
+  }
+}
